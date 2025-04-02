@@ -9,7 +9,7 @@
      <!-- Optional: Add Google Font link here -->
      <link rel="preconnect" href="https://fonts.googleapis.com">
      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="game-container">
@@ -33,10 +33,23 @@
             </div>
         </div>
 
-        <!-- Game Console HUD -->
+        <!-- Enhanced Game Console HUD -->
         <div id="game-console">
-            <div id="console-keys">Keys: <span></span></div>
-            <div id="console-stats">Bullets: <span id="bullet-count">0</span></div>
+            <div class="console-section console-keys">
+                <div class="console-label">INPUT ACTIVE</div>
+                <div class="console-value" id="console-keys-value">None</div>
+            </div>
+            <div class="console-separator"></div>
+            <div class="console-section console-ammo">
+                <div class="console-label">AMMO COUNT</div>
+                <div class="console-value" id="bullet-count">0</div>
+            </div>
+            <div class="console-separator"></div>
+            <div class="console-section console-enemies">
+                 <div class="console-label">HOSTILES</div>
+                 <div class="console-value" id="enemy-count">0</div>
+            </div>
+            <!-- Add more sections as needed -->
         </div>
 
     </div>

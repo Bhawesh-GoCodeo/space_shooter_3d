@@ -22,8 +22,10 @@ const scoreElement = document.getElementById('score');
 const screenFlashElement = document.getElementById('screen-flash');
 const startModalOverlay = document.getElementById('start-modal-overlay');
 const startButton = document.getElementById('start-button');
-const consoleKeysDisplay = document.querySelector('#console-keys span');
+// Updated console element selectors
+const consoleKeysDisplay = document.getElementById('console-keys-value');
 const consoleBulletCount = document.getElementById('bullet-count');
+const consoleEnemyCount = document.getElementById('enemy-count'); // Added enemy count display
 let score = 0;
 
 function updateScoreDisplay(change = 0) {
@@ -301,7 +303,7 @@ const bulletMaterial = new THREE.MeshBasicMaterial({ color: 0xff4444 }); // Red-
 // Bullet Pool
 const bulletPool = [];
 const activeBullets = []; // Bullets currently moving/visible
-const maxBullets = 100; // Maximum number of bullets to pool/allow active
+// REMOVED: const maxBullets = 100; // No longer limiting bullets
 
 // Pre-populate the pool (optional, but can prevent initial stutter)
 function initializeBulletPool() {
@@ -309,7 +311,9 @@ function initializeBulletPool() {
     bulletPool.forEach(bullet => scene.remove(bullet));
     bulletPool.length = 0;
 
-    for (let i = 0; i < maxBullets / 2; i++) { // Start with half the max
+    // Pre-populate with a reasonable number for performance, even though it's infinite
+    const initialPoolSize = 50;
+    for (let i = 0; i < initialPoolSize; i++) {
         const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
         bullet.visible = false; // Start invisible
         bullet.userData.isActive = false;
@@ -323,15 +327,15 @@ function getBulletFromPool() {
     let bullet = null;
     if (bulletPool.length > 0) {
         bullet = bulletPool.pop(); // Get from the end of the pool
-    } else if (activeBullets.length < maxBullets) {
-        // Only create if pool is empty AND we are under the max limit
+    } else {
+        // If pool is empty, create a new bullet (infinite bullets)
         bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
         bullet.userData.boundingBox = new THREE.Box3();
         scene.add(bullet); // Add new bullet to the scene
-        // console.log("Created new bullet, pool empty. Active:", activeBullets.length + 1);
+        // console.log("Created new bullet, pool empty.");
     }
-    // If pool is empty and max bullets reached, we simply don't fire
 
+    // This part remains the same, activating the obtained bullet
     if (bullet) {
         bullet.visible = true;
         bullet.userData.isActive = true;
@@ -351,15 +355,9 @@ function returnBulletToPool(bullet) {
     bullet.userData.isActive = false;
     bullet.position.set(0, 0, -camera.far * 2); // Move far away
 
-    if (bulletPool.length < maxBullets) {
-        bulletPool.push(bullet); // Add back to pool if not full
-    } else {
-        // If pool is somehow full (shouldn't happen often with max limit),
-        // we might need to dispose of the bullet geometry/material if they weren't shared
-        // Since they ARE shared here, we can just remove it from the scene.
-        // scene.remove(bullet); // Or just let it be garbage collected eventually
-        // console.warn("Bullet pool full, bullet not added back.");
-    }
+    // Add back to pool (no max limit check needed)
+    bulletPool.push(bullet);
+
     updateConsoleStats(); // Update bullet count when one is returned
 }
 
@@ -417,7 +415,8 @@ const enemies = [];
 const ENEMY_TYPES = {
     GRUNT: {
         name: 'GRUNT',
-        geometry: new THREE.IcosahedronGeometry(1.2, 0), // Purple Icosahedron
+        // INCREASED SIZE: 1.2 -> 1.6
+        geometry: new THREE.IcosahedronGeometry(1.6, 0),
         material: new THREE.MeshStandardMaterial({
             color: 0xcc00ff, metalness: 0.2, roughness: 0.4, emissive: 0x550077, emissiveIntensity: 0.4
         }),
@@ -427,7 +426,8 @@ const ENEMY_TYPES = {
     },
     DODGER: {
         name: 'DODGER',
-        geometry: new THREE.OctahedronGeometry(1.0, 0), // Green Octahedron
+        // INCREASED SIZE: 1.0 -> 1.4
+        geometry: new THREE.OctahedronGeometry(1.4, 0),
         material: new THREE.MeshStandardMaterial({
             color: 0x00ff88, metalness: 0.3, roughness: 0.5, emissive: 0x005533, emissiveIntensity: 0.3
         }),
@@ -482,14 +482,17 @@ function spawnEnemy() {
     enemy.userData.isSpawning = true;
     enemy.userData.spawnTimer = enemySpawnFlashDuration;
 
-    // Calculate spawn position
-    const aspect = window.innerWidth / window.innerHeight;
+    // Calculate spawn position - FOCUS ON CENTER
+  const aspect = window.innerWidth / window.innerHeight;
     const spawnCheckDistance = 50;
     const worldHeightSpawn = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * spawnCheckDistance * 2;
     const worldWidthSpawn = worldHeightSpawn * aspect;
-    const spawnX = (Math.random() - 0.5) * worldWidthSpawn;
-    const spawnY = (Math.random() - 0.5) * worldHeightSpawn;
-    const spawnZ = -100; // Consistent starting Z distance
+
+    // Reduce spawn area to 40% of screen width/height for more central focus
+    const spawnAreaFactor = 0.4;
+    const spawnX = (Math.random() - 0.5) * (worldWidthSpawn * spawnAreaFactor);
+    const spawnY = (Math.random() - 0.5) * (worldHeightSpawn * spawnAreaFactor);
+    const spawnZ = -100;
 
     enemy.position.set(spawnX, spawnY, spawnZ);
     if (enemy.userData.movementPattern === 'sine') {
@@ -503,6 +506,7 @@ function spawnEnemy() {
 
     scene.add(enemy);
     enemies.push(enemy);
+    updateConsoleStats(); // Update enemy count when one spawns
 }
 
 
@@ -561,13 +565,19 @@ function updateEnemies(deltaTime) {
     }
 
     // Remove enemies marked for removal (iterate backwards for safe splicing)
+    let enemiesRemoved = false;
     indicesToRemove.sort((a, b) => b - a); // Sort descending
     for (const index of indicesToRemove) {
         if (enemies[index]) { // Check if it still exists
             scene.remove(enemies[index]);
             // Dispose geometry/material if not shared/pooled - here they are cloned, so okay
             enemies.splice(index, 1);
+            enemiesRemoved = true;
         }
+    }
+    // Update console only if enemies were actually removed
+    if (enemiesRemoved) {
+        updateConsoleStats();
     }
 }
 
@@ -821,13 +831,23 @@ function updateConsoleKeys() {
         .filter(([key, isPressed]) => isPressed)
         .map(([key]) => key.toUpperCase()) // Convert to uppercase for display
         .join(' ');
-    consoleKeysDisplay.textContent = pressed || 'None'; // Display 'None' if no keys are pressed
+        console.log(`keysPressed keys: ${keysPressed}`); // Debug log
+        
+        console.log(`Pressed keys: ${pressed}, length: ${pressed.length}`); // Debug log
+       
+        
+    consoleKeysDisplay.textContent = pressed == " " ? 'Space' : pressed || 'None'; // Display 'None' if no keys are pressed
 }
 
 function updateConsoleStats() {
-    if (!consoleBulletCount) return;
-    consoleBulletCount.textContent = activeBullets.length;
-    // Add more stats here later (e.g., enemies count)
+    if (consoleBulletCount) {
+        // Display infinity symbol or just active count for "infinite" ammo
+        consoleBulletCount.textContent = '∞'; // Or activeBullets.length if you prefer showing active count
+    }
+    if (consoleEnemyCount) {
+        consoleEnemyCount.textContent = enemies.length; // Update enemy count
+    }
+    // Add more stats here later (e.g., lives)
 }
 
 // --- Animation Loop ---
@@ -873,7 +893,7 @@ function animate() {
     checkCollisions(); // Marks bullets/enemies, uses type-specific score
 
     // Update Console Stats (can be done less frequently if needed)
-    // updateConsoleStats(); // Already updated when bullets are added/removed
+    // updateConsoleStats(); // Already updated when bullets/enemies are added/removed
 
     // Render Scene
     renderer.render(scene, camera);
