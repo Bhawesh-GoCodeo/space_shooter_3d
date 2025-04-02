@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Space Shooter 3D</title>
+    <link rel="stylesheet" href="/style.css">
+     <!-- Optional: Add Google Font link here -->
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+
+        <!-- Screen Flash Element -->
+        <div id="screen-flash"></div>
+
+        <!-- HUD elements -->
+        <div id="hud">
+            SCORE: <span id="score">0</span>
+        </div>
+
+        <!-- Start Game Modal -->
+        <div id="start-modal-overlay">
+            <div id="start-modal-content">
+                <h1>Space Shooter 3D</h1>
+                <p>Use W, A, S, D or Arrow Keys to move.</p>
+                <p>Press SPACE to shoot.</p>
+                <button id="start-button">Start Game</button>
+            </div>
+        </div>
+
+        <!-- Game Console HUD -->
+        <div id="game-console">
+            <div id="console-keys">Keys: <span></span></div>
+            <div id="console-stats">Bullets: <span id="bullet-count">0</span></div>
+        </div>
+
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
